@@ -25,10 +25,13 @@ int main() {
     bool *CRC = new bool [L_G];
     cout << endl << endl;
     int c_i;
-    for (c_i=0; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1] ^ G[c_i+1];
+    if (serialised[0]) for (c_i=0; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1] ^ G[c_i+1];
+    else for (c_i=0; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1];
     CRC[c_i] = serialised[c_i+1];
+
     for (int i=0; i<L_G; i++) cout << CRC[i];
     cout << endl;
+    
     for (int j=c_i+2; j<=L_G+L_f-1; j++) {
         int c;
         if (CRC[0]) {

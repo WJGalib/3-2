@@ -1,5 +1,6 @@
 #include<iostream>
 #include<cstring>
+#include<cstdlib>
 
 using namespace std;
 
@@ -7,9 +8,31 @@ inline int pow2 (int x) {
     return (1 << x);
 };
 
+bool* calc_CRC (bool* serialised, bool* G, int L_data, int L_G) {
+    // Calculating CRC 
+    // Appending L_G-1 zeroes 
+    for (int i=L_data; i<L_data+L_G; i++) serialised[i] = 0;
+    bool *CRC = new bool [L_G];
+    int c_i;
+    if (serialised[0]) for (c_i = 0; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1] ^ G[c_i+1];
+    else for (c_i = 0; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1];
+    CRC[c_i] = serialised[c_i+1];
+    for (int j=c_i+2; j<=L_G+L_data-1; j++) {
+        int c;
+        if (CRC[0]) {
+            for (c=0; c<L_G-1; c++) CRC[c] = CRC[c+1] ^ G[c+1];
+        } else {
+            for (c=0; c<L_G-1; c++) CRC[c] = CRC[c+1];
+        };
+        CRC[c] = serialised[j];
+    };
+    return CRC;
+};
+
 int main() {
-    char *str = new char[256], *G_str = new char [128];
-    bool **block, **p_block, *serialised, *G;
+    srand(1);
+    char *str = new char[256], *G_str = new char [128], *reconstructed_str = new char[256]();
+    bool **block, **p_block, *serialised, *G, *received_frame, **reconstr_p_block, **reconstr_block;
     int m, r_h, row_count;
     double p;
 
@@ -101,37 +124,98 @@ int main() {
     for (int i=0; i<L_G; i++) G[i] = G_str[i] - '0';
 
     // Serialising data block in column-major order
-    serialised = new bool [m_h*row_count+L_G-1];
+    serialised = new bool [m_h*row_count+L_G];
     for (int i=1; i<=m_h; i++)
         for (int k=0; k<row_count; k++)
             serialised[row_count*(i-1)+k] = p_block[k][i];
     cout << "Data bits after column-wise serialisation:" << endl;
-    for (int i=0; i<m_h*row_count; i++) 
-        cout << serialised[i];
+    for (int i=0; i<m_h*row_count; i++) cout << serialised[i];
     cout << endl << endl;
 
-    // Calculating CRC 
-    // Appending L_G-1 zeroes 
-    for (int i=m_h*row_count; i<m_h*row_count+L_G; i++) serialised[i] = 0;
-    bool *CRC = new bool [L_G];
+    // Calculating CRC after filling zeroes after data
+    bool* CRC = calc_CRC (serialised, G, m_h*row_count, L_G);
 
-    int c_i;
-    for (c_i=0; !serialised[c_i]; c_i++);
-    for (; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1] ^ G[c_i+1];
-    CRC[c_i] = serialised[c_i+1];
-    for (int i=0; i<L_G; i++) cout << CRC[i];
-    cout << endl;
-    for (int j=c_i+2; j<=L_G+m_h*row_count-1; j++) {
-        int c;
-        if (CRC[0]) {
-            for (c=0; c<L_G-1; c++) CRC[c] = CRC[c+1] ^ G[c+1];
-        } else {
-            for (c=0; c<L_G-1; c++) CRC[c] = CRC[c+1];
+    // Writing CRC checksum in palce of appended zeroes
+    for (int i=m_h*row_count, j=0; i<m_h*row_count+L_G; i++, j++) serialised[i] = CRC[j];
+        cout << "Data bits after appending CRC checksum (sent frame):" << endl;
+    for (int i=0; i<m_h*row_count; i++) cout << serialised[i];
+    cout << "\e[1;36m";
+    for (int i=m_h*row_count; i<m_h*row_count+L_G-1; i++) cout << serialised[i];
+    cout << "\e[0m" << endl << endl;
+
+    // Copying to received frame with random errors
+    received_frame = new bool[m_h*row_count+L_G-1];
+    int rand_int = (int)(p * RAND_MAX);
+    for (int i=0; i<m_h*row_count+L_G-1; i++) {
+        if (rand() < rand_int) received_frame[i] = !serialised[i];
+       else received_frame[i] = serialised[i];
+    };
+    cout << "Received frame: " << endl;
+    for (int i=0; i<m_h*row_count+L_G-1; i++) {
+        if (received_frame[i] != serialised[i]) cout << "\e[1;31m";
+        cout << received_frame[i] << "\e[0m";
+    };
+    cout << endl << endl;
+
+    // Calculating CRC of "received" data and checking for CRC match
+    bool *CRC_received = new bool [L_G-1], *CRC_received_calc;
+    // Saving received frame's CRC
+    for (int i=0; i<L_G-1; i++) CRC_received[i] = received_frame[m_h*row_count+i];
+    // Calculating CRC for received frame
+    CRC_received_calc = calc_CRC (received_frame, G, m_h*row_count, L_G);
+    // for (int i=0; i<L_G-1; i++) cout << CRC_received_calc[i];  // To view CRC checksum of received data
+    // cout << endl;    
+    // Checking calculated CRC against received CRC
+    bool CRC_match = true;
+    for (int i=0; i<L_G-1; i++) {
+        if (CRC_received_calc[i] != CRC_received[i]) {
+            CRC_match = false;
+            break;
         };
-        CRC[c] = serialised[j];
-        for (int i=0; i<L_G; i++) cout << CRC[i];
+    };
+    cout << "Result of CRC checksum matching: ";
+    if (CRC_match) cout << "no ";
+    cout << "error detected" << endl;
+
+    // Reconstructing data block from received frame after removing CRC bits
+    reconstr_block = new bool* [row_count];
+    for (int k=0; k<row_count; k++) {
+        reconstr_block[k] = new bool[m_h+1];
+        for (int i=1; i<=m_h; i++) {
+            reconstr_block[k][i] = received_frame[row_count*(i-1)+k];
+        };
+    };
+    cout << "Data block after removing CRC checksum bits:" << endl;
+    for (int k=0; k<row_count; k++) {
+        for (int i=1; i<=m_h; i++) {
+             if (received_frame[row_count*(i-1)+k] != serialised[row_count*(i-1)+k]) cout << "\e[1;31m";
+            cout << reconstr_block[k][i] << "\e[0m";;
+        };
         cout << endl;
     };
-    cout << endl;
+    cout << endl << endl;
+
+    for (int k=0; k<row_count; k++) {
+        for (int i=0; i<m*8; i++) {
+            
+        };
+    };
+
+    reconstr_block = new bool* [row_count];
+    for (int k=0; k<row_count; k++) {
+        reconstr_block[k] = new bool [m_h+1]();
+        // Placing data bits in Hamming code 
+        int curr_r = 0;
+        for (int i=1, j=0; i<=m_h; i++) {
+            if (i == pow2(curr_r)) {
+                curr_r++; continue;
+            };
+            p_block[k][i] = block[k][j];
+            j++;
+        };
+    };
+
+    cout << reconstructed_str << endl;
+
     return 0;
 };

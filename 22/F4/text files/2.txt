@@ -1,0 +1,26 @@
+data string after padding: a
+
+data block (ascii code of m characters per row):
+01100001
+
+data block after adding check bits:
+110111010001
+
+data bits after column-wise serialization:
+110111010001
+
+data bits after appending CRC checksum (sent frame):
+11011101000101
+
+received frame:
+11011101000101
+
+result of CRC checksum matching: no error detected
+
+data block after removing CRC checksum bits:
+110111010001
+
+data block after removing check bits:
+01100001
+
+output frame: a
