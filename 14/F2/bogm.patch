@@ -1,0 +1,33 @@
+diff --git a/Makefile b/Makefile
+index 39a99d7..a20720b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -116,6 +116,7 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
+ .PRECIOUS: %.o
+ 
+ UPROGS=\
++	$U/_bogm\
+ 	$U/_cat\
+ 	$U/_echo\
+ 	$U/_forktest\
+diff --git a/user/bogm.c b/user/bogm.c
+new file mode 100644
+index 0000000..29eb44d
+--- /dev/null
++++ b/user/bogm.c
+@@ -0,0 +1,14 @@
++#include "kernel/types.h"
++#include "kernel/stat.h"
++#include "user/user.h"
++
++int main() {
++    printf("Hello saar");
++    char str[20];
++    gets (str, 18);
++    int x = atoi(str);
++
++    printf("%d^3 = %d\n", x, x*x*x);
++
++    return 0;
++}
+\ No newline at end of file

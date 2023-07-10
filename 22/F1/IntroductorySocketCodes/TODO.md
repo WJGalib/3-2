@@ -1,0 +1,1 @@
+We learned how to send data from server to client. Your job is to send data from your PC to your friend's PC. Find IP using ``ipconfig`` command and connect to same WIFI. Then change the server IP address in the ``Client.java``.

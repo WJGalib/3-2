@@ -1,0 +1,2 @@
+initialise process in allocproc or fork 
+check filestat to understand copyout
