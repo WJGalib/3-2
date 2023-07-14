@@ -1,24 +1,9 @@
-diff --git a/.vscode/settings.json b/.vscode/settings.json
-new file mode 100644
-index 0000000..06f1224
---- /dev/null
-+++ b/.vscode/settings.json
-@@ -0,0 +1,5 @@
-+{
-+    "files.associations": {
-+        "syscall_stat.h": "c"
-+    }
-+}
-\ No newline at end of file
 diff --git a/Makefile b/Makefile
-index 39a99d7..aa99c08 100644
+index 39a99d7..3308e9f 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -118,8 +118,11 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
- UPROGS=\
- 	$U/_cat\
+@@ -120,6 +120,8 @@ UPROGS=\
  	$U/_echo\
-+	$U/_exit\
  	$U/_forktest\
  	$U/_grep\
 +	$U/_grind\
@@ -26,7 +11,7 @@ index 39a99d7..aa99c08 100644
  	$U/_init\
  	$U/_kill\
  	$U/_ln\
-@@ -128,8 +131,8 @@ UPROGS=\
+@@ -128,8 +130,8 @@ UPROGS=\
  	$U/_rm\
  	$U/_sh\
  	$U/_stressfs\
@@ -37,7 +22,7 @@ index 39a99d7..aa99c08 100644
  	$U/_zombie\
  
 diff --git a/kernel/defs.h b/kernel/defs.h
-index a3c962b..5bc1f7f 100644
+index a3c962b..1e62b44 100644
 --- a/kernel/defs.h
 +++ b/kernel/defs.h
 @@ -8,6 +8,7 @@ struct spinlock;
@@ -48,21 +33,11 @@ index a3c962b..5bc1f7f 100644
  
  // bio.c
  void            binit(void);
-@@ -124,6 +125,9 @@ void            releasesleep(struct sleeplock*);
- int             holdingsleep(struct sleeplock*);
- void            initsleeplock(struct sleeplock*, char*);
- 
-+// start.c
-+void            stopqemu();
-+
- // string.c
- int             memcmp(const void*, const void*, uint);
- void*           memmove(void*, const void*, uint);
-@@ -137,9 +141,11 @@ char*           strncpy(char*, const char*, int);
+@@ -137,9 +138,11 @@ char*           strncpy(char*, const char*, int);
  void            argint(int, int*);
  int             argstr(int, char*, int);
  void            argaddr(int, uint64 *);
-+void            argsyscallstat(int, int, int);
++void            argsyscallstat(int, int);
  int             fetchstr(uint64, char*, int);
  int             fetchaddr(uint64, uint64*);
  void            syscall();
@@ -70,51 +45,15 @@ index a3c962b..5bc1f7f 100644
  
  // trap.c
  extern uint     ticks;
-diff --git a/kernel/kernelvec.S b/kernel/kernelvec.S
-index fb31b32..08b961e 100644
---- a/kernel/kernelvec.S
-+++ b/kernel/kernelvec.S
-@@ -97,12 +97,18 @@ timervec:
-         # scratch[0,8,16] : register save area.
-         # scratch[24] : address of CLINT's MTIMECMP register.
-         # scratch[32] : desired interval between interrupts.
-+        # scratch[40] : machine exit flag
-         
-         csrrw a0, mscratch, a0
-         sd a1, 0(a0)
-         sd a2, 8(a0)
-         sd a3, 16(a0)
- 
-+        # stop qemu if machine exit flag is 1
-+
-+        ld a1, 40(a0)
-+        bne a1, zero, stopqemu
-+
-         # schedule the next timer interrupt
-         # by adding interval to mtimecmp.
-         ld a1, 24(a0) # CLINT_MTIMECMP(hart)
-@@ -122,3 +128,12 @@ timervec:
-         csrrw a0, mscratch, a0
- 
-         mret
-+
-+stopqemu:
-+        lui a1, 0x100
-+        lui a2, 0x5
-+        addi a2, a2, 0x555
-+        sw a2, 0(a1)
-+
-+spin:
-+        j spin
 diff --git a/kernel/main.c b/kernel/main.c
-index f0d3171..d174cda 100644
+index f0d3171..a7500aa 100644
 --- a/kernel/main.c
 +++ b/kernel/main.c
 @@ -29,6 +29,7 @@ main()
      fileinit();      // file table
      virtio_disk_init(); // emulated hard disk
      userinit();      // first user process
-+    initsyscalllocks();
++        initsyscalllocks();
      __sync_synchronize();
      started = 1;
    } else {
@@ -150,43 +89,8 @@ index d021857..612e1df 100644
  
    // wait_lock must be held when using this:
    struct proc *parent;         // Parent process
-diff --git a/kernel/start.c b/kernel/start.c
-index e16f18a..fb0e266 100644
---- a/kernel/start.c
-+++ b/kernel/start.c
-@@ -11,7 +11,7 @@ void timerinit();
- __attribute__ ((aligned (16))) char stack0[4096 * NCPU];
- 
- // a scratch area per CPU for machine-mode timer interrupts.
--uint64 timer_scratch[NCPU][5];
-+uint64 timer_scratch[NCPU][6];
- 
- // assembly code in kernelvec.S for machine-mode timer interrupt.
- extern void timervec();
-@@ -73,9 +73,11 @@ timerinit()
-   // scratch[0..2] : space for timervec to save registers.
-   // scratch[3] : address of CLINT MTIMECMP register.
-   // scratch[4] : desired interval (in cycles) between timer interrupts.
-+  // scrattch[5] : halt flad for timervec
-   uint64 *scratch = &timer_scratch[id][0];
-   scratch[3] = CLINT_MTIMECMP(id);
-   scratch[4] = interval;
-+  scratch[5] = 0;
-   w_mscratch((uint64)scratch);
- 
-   // set the machine-mode trap handler.
-@@ -87,3 +89,8 @@ timerinit()
-   // enable machine-mode timer interrupts.
-   w_mie(r_mie() | MIE_MTIE);
- }
-+
-+void
-+stopqemu() {
-+  timer_scratch[0][5] = 1;
-+}
-\ No newline at end of file
 diff --git a/kernel/syscall.c b/kernel/syscall.c
-index ed65409..7f15099 100644
+index ed65409..e07fc16 100644
 --- a/kernel/syscall.c
 +++ b/kernel/syscall.c
 @@ -6,6 +6,11 @@
@@ -228,23 +132,21 @@ index ed65409..7f15099 100644
    return fetchstr(addr, buf, max);
  }
  
-@@ -101,6 +112,9 @@ extern uint64 sys_unlink(void);
+@@ -101,6 +112,8 @@ extern uint64 sys_unlink(void);
  extern uint64 sys_link(void);
  extern uint64 sys_mkdir(void);
  extern uint64 sys_close(void);
 +extern uint64 sys_trace(void);
 +extern uint64 sys_history(void);
-+extern uint64 sys_sysexit(void);
  
  // An array mapping syscall numbers from syscall.h
  // to the function that handles the system call.
-@@ -126,22 +140,116 @@ static uint64 (*syscalls[])(void) = {
+@@ -126,22 +139,111 @@ static uint64 (*syscalls[])(void) = {
  [SYS_link]    sys_link,
  [SYS_mkdir]   sys_mkdir,
  [SYS_close]   sys_close,
 +[SYS_trace]   sys_trace,
 +[SYS_history] sys_history,
-+[SYS_sysexit] sys_sysexit,
 +};
 +
 +char syscallname[NELEM(syscalls)][32] = {
@@ -271,7 +173,6 @@ index ed65409..7f15099 100644
 +[SYS_close]   "close",
 +[SYS_trace]   "trace",
 +[SYS_history] "history",
-+[SYS_sysexit] "sysexit",
  };
  
 +struct spinlock syscalllock[NELEM(syscalls)];
@@ -279,7 +180,7 @@ index ed65409..7f15099 100644
 +uint syscalltime[NELEM(syscalls)];
 +
 +// Initialise system call locks
-+void
++void 
 +initsyscalllocks() {
 +  for (int i=0; i<NELEM(syscalls); i++) {
 +    initlock(&syscalllock[i], "lock");
@@ -288,22 +189,19 @@ index ed65409..7f15099 100644
 +
 +// Write to system call status struct argument
 +void
-+argsyscallstat (int proc_n, int n1, int n2) {
++argsyscallstat (int n1, int n2) {
 +  struct proc *p = myproc();
 +  int n;
-+  argint (n1, &n);
++  argint (0, &n);
 +  //printf("%s %d %d\n", (char*)(syscallname[n]), syscallcount[n], syscalltime[n]);
 +  //struct syscall_stat *stat = (struct syscall_stat*) argraw(n2);
 +  uint64 stat;
-+  argaddr(n2, &stat);
++  argaddr(1, &stat);
 +  struct syscall_stat data;
 +  strncpy(data.syscall_name, syscallname[n], strlen(syscallname[n]));
-+  data.syscall_name[strlen(syscallname[n])] = '\0';
 +  data.count = syscallcount[n];
 +  data.accum_time = syscalltime[n];
-+  acquire(&syscalllock[proc_n]);
 +  copyout(p->pagetable, stat, (char *)&data, sizeof(data));
-+  release(&syscalllock[proc_n]);
 +}
 +
  void
@@ -357,10 +255,10 @@ index ed65409..7f15099 100644
 +
  }
 diff --git a/kernel/syscall.h b/kernel/syscall.h
-index bc5f356..67aa039 100644
+index bc5f356..086dfe5 100644
 --- a/kernel/syscall.h
 +++ b/kernel/syscall.h
-@@ -1,22 +1,29 @@
+@@ -1,22 +1,28 @@
  // System call numbers
 -#define SYS_fork    1
 -#define SYS_exit    2
@@ -406,27 +304,12 @@ index bc5f356..67aa039 100644
 +#define SYS_close   21
 +#define SYS_trace   22
 +#define SYS_history 23
-+#define SYS_sysexit 24
 +
 +#define ARG_INT    420
 +#define ARG_ADDR   421
 +#define ARG_STR    422
-diff --git a/kernel/syscall_stat.h b/kernel/syscall_stat.h
-new file mode 100644
-index 0000000..050e2e7
---- /dev/null
-+++ b/kernel/syscall_stat.h
-@@ -0,0 +1,8 @@
-+#include "types.h"
-+
-+
-+struct syscall_stat {
-+    char syscall_name[32];
-+    int count;
-+    uint accum_time;
-+};
 diff --git a/kernel/sysproc.c b/kernel/sysproc.c
-index 1de184e..b350a2f 100644
+index 1de184e..a0b1415 100644
 --- a/kernel/sysproc.c
 +++ b/kernel/sysproc.c
 @@ -5,6 +5,7 @@
@@ -437,7 +320,7 @@ index 1de184e..b350a2f 100644
  
  uint64
  sys_exit(void)
-@@ -89,3 +90,35 @@ sys_uptime(void)
+@@ -89,3 +90,27 @@ sys_uptime(void)
    release(&tickslock);
    return xticks;
  }
@@ -456,7 +339,7 @@ index 1de184e..b350a2f 100644
 +sys_history(void) {
 +  // int n;
 +  // argint(0, &n);
-+  argsyscallstat (SYS_history, 0, 1);
++  argsyscallstat (0, 1);
 +  // int a;
 +  // argint(0, &a);
 +  // uint64 b;
@@ -465,107 +348,8 @@ index 1de184e..b350a2f 100644
 +  // copyout(p->pagetable, b, (char *)&st, sizeof(st)) < 0
 +  return 0;
 +}
-+
-+
-+// exit call handler
-+uint64
-+sys_sysexit(void) {
-+  stopqemu();
-+  return 0;
-+}
-\ No newline at end of file
-diff --git a/user/exit.c b/user/exit.c
-new file mode 100644
-index 0000000..5735a94
---- /dev/null
-+++ b/user/exit.c
-@@ -0,0 +1,9 @@
-+#include "kernel/param.h"
-+#include "kernel/types.h"
-+#include "kernel/stat.h"
-+#include "user/user.h"
-+
-+int main() {
-+    sysexit();
-+    exit (0);
-+}
-\ No newline at end of file
-diff --git a/user/history.c b/user/history.c
-new file mode 100644
-index 0000000..8472501
---- /dev/null
-+++ b/user/history.c
-@@ -0,0 +1,35 @@
-+#include "kernel/param.h"
-+#include "kernel/types.h"
-+#include "kernel/stat.h"
-+#include "kernel/syscall_stat.h"
-+#include "user/user.h"
-+
-+struct syscall_stat;
-+
-+int main (int argc, char *argv[]) {
-+  //int i;
-+  // char *nargv[MAXARG];
-+
-+  struct syscall_stat pstat;
-+
-+
-+  if (argc > 1) {
-+    if(argv[1][0] < '0' || argv[1][0] > '9') {
-+      fprintf(2, "Usage: %s sys_call_num \n", argv[0]);
-+      exit(1);
-+    }
-+    int call = atoi(argv[1]);atoi(argv[1]);
-+    history(call, &pstat);
-+    printf("%d:\tsyscall: %s, #: %d, time: %d\n", call, pstat.syscall_name, pstat.count, pstat.accum_time);
-+  } else if (argc == 1) for (int i=1; i<=24; i++) {
-+    history(i, &pstat);
-+    printf("%d:\tsyscall: %s, #: %d, time: %d\n", i, pstat.syscall_name, pstat.count, pstat.accum_time);
-+  }
-+
-+
-+  // for(i = 2; i < argc && i < MAXARG; i++){
-+  //   nargv[i-2] = argv[i];
-+  // }
-+  // exec(nargv[0], nargv);
-+  exit(0);
-+}
-diff --git a/user/trace.c b/user/trace.c
-new file mode 100644
-index 0000000..3dd9b4c
---- /dev/null
-+++ b/user/trace.c
-@@ -0,0 +1,27 @@
-+#include "kernel/param.h"
-+#include "kernel/types.h"
-+#include "kernel/stat.h"
-+#include "user/user.h"
-+
-+int
-+main(int argc, char *argv[])
-+{
-+  int i;
-+  char *nargv[MAXARG];
-+
-+  if(argc < 3 || (argv[1][0] < '0' || argv[1][0] > '9')){
-+    fprintf(2, "Usage: %s sys_call_num command\n", argv[0]);
-+    exit(1);
-+  }
-+
-+  if (trace(atoi(argv[1])) < 0) {
-+    fprintf(2, "%s: trace failed\n", argv[0]);
-+    exit(1);
-+  }
-+
-+  for(i = 2; i < argc && i < MAXARG; i++){
-+    nargv[i-2] = argv[i];
-+  }
-+  exec(nargv[0], nargv);
-+  exit(0);
-+}
 diff --git a/user/user.h b/user/user.h
-index 4d398d5..4cd969b 100644
+index 4d398d5..b5b9462 100644
 --- a/user/user.h
 +++ b/user/user.h
 @@ -1,4 +1,5 @@
@@ -574,25 +358,23 @@ index 4d398d5..4cd969b 100644
  
  // system calls
  int fork(void);
-@@ -22,6 +23,10 @@ int getpid(void);
+@@ -22,6 +23,9 @@ int getpid(void);
  char* sbrk(int);
  int sleep(int);
  int uptime(void);
 +int trace(int);
 +int history(int, struct syscall_stat*);
-+void sysexit();
 +
  
  // ulib.c
  int stat(const char*, struct stat*);
 diff --git a/user/usys.pl b/user/usys.pl
-index 01e426e..258f627 100755
+index 01e426e..e2095e4 100755
 --- a/user/usys.pl
 +++ b/user/usys.pl
-@@ -36,3 +36,6 @@ entry("getpid");
+@@ -36,3 +36,5 @@ entry("getpid");
  entry("sbrk");
  entry("sleep");
  entry("uptime");
 +entry("trace");
 +entry("history");
-+entry("sysexit");
