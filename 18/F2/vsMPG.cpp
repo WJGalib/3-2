@@ -12,17 +12,6 @@ int main() {
         minimax(&game, 7);
         game->printState();       
     };
-    while (!game->isPlayingA()) {
-        cout << "Enter move (cell) for B: ";
-        cin >> input;
-        game->play(input);
-        game->printState();
-    };
-    while(game->isPlayingA()) {
-        cout << "Computer (A) is making a move" << endl;
-        minimax(&game, 7);
-        game->printState();    
-    };
     while (!game->isGameOver()) {
         if (!game->isPlayingA()) {
             cout << "Enter move (cell) for B: ";
