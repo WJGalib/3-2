@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <vector>
 
 class MancalaState {
     int* pits;
@@ -42,15 +43,17 @@ class MancalaState {
     int move (int n) {
         if (n==6 || n==13) return -1;
         int stones = pits[n], i, k;
-        if (stones==0) return n<6? 6 : 13;
+        if (stones==0) {
+            //printf("Invalid move : Empty pit!\n");
+            return n<6? -6 : -13;
+        };
         pits[n] = 0;
-        k = (n+stones+1)%14;
-        for (i=n+1; i!=k ; i=(i+1)%14) {
+        k = stones;
+        for (i=n+1; k>0; i=(i+1)%14) {
             if (n<6 && i==13 || n>6 && i==6) {
-                k++;
                 continue;
             };
-            pits[i]++;
+            pits[i]++, k--;
         };
         i = (i==0)? 13 : i-1;
         if (i!=13 && i!=6 && pits[i]==1) {
@@ -60,7 +63,7 @@ class MancalaState {
                     if (i<6) manI = 6;
                     else manI = 13;
                     inc = pits[i] + pits[12-i];
-                    stonesCaptured += inc;
+                    stonesCaptured += (inc * n<6? 1 : -1);
                     pits[manI] += inc;
                     pits[i] = pits[12-i] = 0;
                 };
@@ -72,15 +75,17 @@ class MancalaState {
 
     bool moveA (int n) {
         if  (!playingA || n<0 || n>5) return false;
-        bool repeat = (move(n) == 6);
-        additionalMoves += repeat;
+        int mr = move(n);
+        bool repeat = (mr==6 || mr==-6);
+        if (mr==6) additionalMoves += repeat;
         return repeat;
     };
 
     bool moveB (int n) {
         if  (playingA || n<0 || n>5) return false;
-        bool repeat = (move(7 + n) == 13);
-        additionalMoves += repeat;
+        int mr = move(7 + n);
+        bool repeat = (mr==13 || mr==-13);
+        if (mr==13) additionalMoves -= repeat;
         return repeat;
     };
 
@@ -106,7 +111,7 @@ class MancalaState {
             pits[6] += sumA;
             for (int i=0; i<6; i++) pits[i] = 0;
             return true;
-        };
+        } else if (sumB==0 && sumA==0) return true;
         return false;
     };
 
@@ -131,25 +136,44 @@ class MancalaState {
         return r;
     };
 
+    bool operator == (MancalaState const& other) {
+        for (int i=0; i<14; i++) 
+            if (this->pits[i] != other.pits[i]) return false;
+        if (this->additionalMoves != other.additionalMoves) return false;
+        if (this->stonesCaptured != other.stonesCaptured) return false;
+        if (this->playingA != other.playingA) return false;
+        return true;
+    };
+
+    std::vector<MancalaState*>* getChildren() {
+        std::vector<MancalaState*>* list = new std::vector<MancalaState*>();
+        for (int i=0; i<6; i++) {
+            MancalaState* child = this->getCopy();
+            child->play(i);
+            if (!(*this == *child)) list->push_back(child);
+            else delete child; 
+        };
+        return list;
+    };
+
     int h1() {
-        if (playingA) return getScoreA() - getScoreB();
-        return getScoreB() - getScoreA();
+        return getScoreA() - getScoreB();
     };
 
     int h2() {
         int sumA = 0, sumB = 0, h2;
         for (int i=0; i<6; i++) sumA += pits[i];
         for (int i=7; i<13; i++) sumB += pits[i];
-        h2 = (sumA - sumB) * (playingA? 1 : -1);
+        h2 = sumA - sumB;
         return 10*h1() + 6*h2;
     };
 
     int h3() {
-        return h2() + 3*additionalMoves;
+        return h2() + 6*additionalMoves;
     };
 
     int h4() {
-        return h3() + 5*stonesCaptured;
+        return h3() + 8*stonesCaptured;
     };
 
 };
