@@ -7,13 +7,14 @@ using namespace std;
 
 int main() {
     srand(time(0));
-    int input, depth = 6 + rand()%5;
+    int input, depth = 6 + rand()%5, depth2 = 6 + rand()%5;
     MancalaState* game = new MancalaState();
 
     cout << "1) User (A) vs User (B)" << endl;
     cout << "2) User (A) vs Computer (B)" << endl;
     cout << "3) Computer (A) vs User (B)" << endl;
     cout << "4) Computer (A) vs Computer (B)" << endl;
+    cout << "5) Computer (A) vs Random Moves (B)" << endl;
     cout << "Select game mode: ";
     cin >> input;
     cout << endl;
@@ -57,11 +58,29 @@ int main() {
         };
     } else if (input == 4) {
         while (!game->isGameOver()) {
-            if (game->isPlayingA()) cout << "Computer (A) is making a move: " << endl;
-            else cout << "Computer (B) is making a move: " << endl;
-            minimax (&game, depth);
+            if (game->isPlayingA()) {
+                cout << "Computer (A) is making a move: " << endl;
+                minimax (&game, depth);
+            } else {
+                cout << "Computer (B) is making a move: " << endl;
+                minimax (&game, depth2);
+            };
             game->printState();
         };
+    } else if (input == 5) {
+        while (!game->isGameOver()) {
+            if (game->isPlayingA()) {
+                cout << "Computer (A) is making a move: " << endl;
+                minimax (&game, depth);
+            } else {
+                cout << "Computer (B) is making a random move: " << endl;
+                game->play(rand()%6);
+            };
+            game->printState();
+        };
+    } else {
+        cout << "Invalid choice" << endl;
+        return 0;
     };
 
     cout << "GAME OVER!" << endl;

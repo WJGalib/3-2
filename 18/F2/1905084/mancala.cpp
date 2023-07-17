@@ -7,7 +7,7 @@ using namespace std;
 
 int main() {
     srand(time(0));
-    int input, depth = 6 + rand()%5;
+    int input, depth = 6 + rand()%5, depth2 = 6 + rand()%5;
     MancalaState* game = new MancalaState();
 
     cout << "1) User (A) vs User (B)" << endl;
@@ -57,9 +57,13 @@ int main() {
         };
     } else if (input == 4) {
         while (!game->isGameOver()) {
-            if (game->isPlayingA()) cout << "Computer (A) is making a move: " << endl;
-            else cout << "Computer (B) is making a move: " << endl;
-            minimax (&game, depth);
+            if (game->isPlayingA()) {
+                cout << "Computer (A) is making a move: " << endl;
+                minimax (&game, depth);
+            } else {
+                cout << "Computer (B) is making a move: " << endl;
+                minimax (&game, depth2);
+            };
             game->printState();
         };
     };
