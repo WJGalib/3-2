@@ -1,0 +1,12 @@
+proc.h struct proc --> add attribute ticket count, queue no. 
+ 
+proc.c void scheduler() ---> 
+default scheduler just checks if running and then switches context 
+check current proc queue
+    check for how many time been ronnin
+        based on that change queue
+        
+getpinfo() syscall -->
+    get all info aof all running procs in a struct
+    
+ 

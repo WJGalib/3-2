@@ -1,0 +1,5 @@
+Chap3-ProbSol, Uninformed search আর Informed Search A* বাদে যা আছে(কি আছে নিজেও দেখি নাই🥹)...স্লাইড থেকা টপিক দেইখা টাইম পাইলে বই পড়...
+আর Chap4-LocalSearch(শুধু Hill Climbing), Genetic Algo(শুধু basic, সেটা কতটুকু জানি না)...স্লাইড সব teams এ আছে 
+
+
+ProbSol, Local search upto page 18, Uninformed search, Informed search e A* related jinish baad
