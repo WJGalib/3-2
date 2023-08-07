@@ -27,22 +27,17 @@ struct student {
 };
 
 struct group {
-    int num, size, print_count;
+    int num, size;
     student* members;
-    sem_t end_print;
-    pthread_t group_thread;
 };
     
 
 const int n_print_station = 4, n_binding_station = 2;
-int n_students, group_size, n_groups, print_rtu, bind_rtu, rw_rtu, eb_n_sub = 0;
+int n_students, group_size, n_groups, print_rtu, bind_rtu, rw_rtu;
 int* printer_state;
 time_t start_time;
 group** groups;
-pthread_mutex_t mutex, *printer_lock, eb_rc_mutex;
-sem_t binder, entry_book;
-
-void* bind_thread (void* arg);
+pthread_mutex_t mutex, *printer_lock;
 
 int get_printer (int s_id) {
     return s_id % n_print_station;
@@ -50,8 +45,13 @@ int get_printer (int s_id) {
 
 void test_print (student* s) {
     int ps_i = get_printer(s->id);
+    if (s->state == IDLE) {
+        pthread_mutex_lock(&mutex);
+        s->state = WAITING_TO_PRINT;
+        pthread_mutex_unlock(&mutex);
+    }
     if (s->state != WAITING_TO_PRINT) return;
-    printf("\e[2;30mStudent %d is waiting to print at PS_%d at time %d\n\e[0m", s->id, ps_i+1, time(0)-start_time);
+    printf("Student %d is waiting to print at PS_%d at time %d\n", s->id, ps_i+1, time(0)-start_time);
     if (printer_state[ps_i] == BUSY) sem_wait(&(s->lock));
     //printf("hello from S%d test\n", s->id);
 
@@ -65,19 +65,15 @@ void test_print (student* s) {
 
     sem_post(&(s->lock));
     
-    pthread_mutex_lock(&mutex);
-    if (!(s->explored))   
-        printf("Student %d has arrived at PS_%d at time %d\n", s->id, ps_i+1, time(0)-start_time);
-    s->explored = 1;
-    pthread_mutex_unlock(&mutex);
+    printf("Student %d has arrived at PS_%d at time %d\n", s->id, ps_i+1, time(0)-start_time);
 };
 
 
 void start_print_copy (student* s) {
     // int ps_i = get_printer(s->id);
-    pthread_mutex_lock(&mutex);
-    s->state = WAITING_TO_PRINT;
-    pthread_mutex_unlock(&mutex);
+    // pthread_mutex_lock(&mutex);
+    // s->state = WAITING_TO_PRINT;
+    // pthread_mutex_unlock(&mutex);
     test_print(s);
     
     //if (s->state == PRINTING) sem_wait(&(s->lock));
@@ -89,37 +85,53 @@ void end_print_copy (student* s) {
 
     pthread_mutex_lock(&mutex);
     s->state = DONE_PRINTING;
-    printf("\e[0;32mStudent %d has finished printing on PS_%d at time %d\n\e[0m", s->id, ps_i+1, time(0)-start_time);
-    s->grp->print_count++;
-    if (s->grp->print_count == s->grp->size) {
-        printf("\e[3;36mGroup %d has finished printing at time %d\n\e[0m", s->grp->num, time(0)-start_time);
-        sem_post (&(s->grp->end_print));
-    };
-    if (s == &(s->grp->members[s->grp->size-1])) {     // check if leader
-        pthread_create (&(s->grp->group_thread), NULL, &bind_thread, s->grp);
-    };
     pthread_mutex_unlock(&mutex);
+
+    printf("\033[0;32mStudent %d has finished printing on PS_%d at time %d\n\033[0m", s->id, ps_i+1, time(0)-start_time);
 
     pthread_mutex_lock(&printer_lock[ps_i]);
     printer_state[ps_i] = AVAILABLE;
     pthread_mutex_unlock(&printer_lock[ps_i]);
 
-    for (int i=0; i<s->grp->size; i++) 
-        if (s->grp->members[i].id != s->id  && get_printer(s->grp->members[i].id) == ps_i) 
-            test_print(&(s->grp->members[i]));
+    int assigned = 0;
+    for (int i=0; i<s->grp->size; i++) {
+        if (s->grp->members[i].id != s->id  && get_printer(s->grp->members[i].id) == ps_i) {
+            if (s->grp->members[i].state == IDLE) {
+                test_print(&(s->grp->members[i]));
+            } else {
+                int semval;
+                sem_getvalue (&(s->grp->members[i].lock), &semval);
+                if (semval == 0) sem_post(&(s->grp->members[i].lock));
+                assigned = 1;
+                break;
+            };
+        };
+    };
 
-    for (int k=0; k<n_groups; k++) if (groups[k] != s->grp)
-        for (int j=0; j<groups[k]->size; j++)
-            if (groups[k]->members[j].id != s->id  && get_printer(groups[k]->members[j].id) == ps_i) 
-                test_print(&(groups[k]->members[j]));
+    if (assigned) for (int k=0; k<n_groups; k++) if (groups[k] != s->grp) {
+        int break_outer = 0;
+        for (int j=0; j<groups[k]->size; j++) {
+            if (groups[k]->members[j].id != s->id  && get_printer(groups[k]->members[j].id) == ps_i) {
+                if (groups[k]->members[j].state == IDLE) {
+                    test_print(&(groups[k]->members[j]));
+                } else {
+                    int semval;
+                    sem_getvalue (&(groups[k]->members[j].lock), &semval);
+                    if (semval == 0) sem_post(&(groups[k]->members[j].lock));
+                    break_outer = 1;
+                    break;
+                };
+            };
+        };
+        if (break_outer) break;
+    };
 };
 
-void* student_thread (void* arg) {
+void* print_copy_thread (void* arg) {
     //int id = *((int*)arg);
     student* s = (student*)arg;
-    
     int ps_i = get_printer(s->id);
-    sleep(rand()%3+2);
+    //sleep(rand()%3+2);
 
     start_print_copy(s);
     sleep(print_rtu);
@@ -129,8 +141,8 @@ void* student_thread (void* arg) {
 };
 
 
-void student_start (student* s) {
-    pthread_create (&(s->thread), NULL, &student_thread, s);
+void print_copy (student* s) {
+    pthread_create (&(s->thread), NULL, &print_copy_thread, s);
 };
 
 
@@ -142,46 +154,22 @@ group* create_group (int size, int num) {
         members[i].id = 1+i+size*(num-1);
         sem_init (&(members[i].lock), 0, 0);
         members[i].grp = g;
-        members[i].state = WAITING_TO_PRINT;
-        members[i].explored = 0;
+        members[i].state = IDLE;
     };
-    g->num = num, g->size = size, g->members = members, g->print_count = 0;
-    sem_init (&(g->end_print), 0, 0);
+    g->num = num, g->size = size, g->members = members;
     return g;
 };
 
 void start_print_copies (group* g) {
-    for (int i=0; i<g->size; i++) student_start(&(g->members[i]));
+    for (int i=0; i<g->size; i++) print_copy(&(g->members[i]));
 };
 
-void end_print_copies (group* g) {  
+void end_print_copies (group* g) {
     for (int i=0; i<g->size; i++) pthread_join(g->members[i].thread, NULL);
-    pthread_join(g->group_thread, NULL);
+    printf("\033[0;36mGroup %d has finished printing at time %d\n\033[0m", g->num, time(0)-start_time);
     for (int i=0; i<g->size; i++) sem_destroy(&(g->members[i].lock));
-    sem_destroy(&(g->end_print));
 };
 
-void* bind_thread (void* arg) {
-    group* g = (group*)arg;
-
-    if (g->print_count != g->size) sem_wait(&(g->end_print));
-    printf("Student %d, leader of Group %d is proceeding to bind\n", g->members[g->size-1].id, g->num);
-
-    printf("\e[2;31mGroup %d has started binding at time %d\n\e[0m", g->num, time(0)-start_time);
-    sem_wait(&binder);
-    sleep(bind_rtu);
-    sem_post(&binder);
-    printf("\e[1;31mGroup %d has finished binding at time %d\n\e[0m", g->num, time(0)-start_time);
-
-    printf("\e[2;33mStudent %d, leader of Group %d, is writing to the entry-book\n\e[0m", g->members[g->size-1].id, g->num);
-    sem_wait(&entry_book);
-    sleep(rw_rtu);
-    eb_n_sub++;
-    sem_post(&entry_book);
-    printf("\e[1;33mGroup %d has submitted the report at time %d\n\e[0m", g->num, time(0)-start_time);
-
-    return 0;
-};
 
 int main() {	
     scanf("%d%d%d%d%d", &n_students, &group_size, &print_rtu, &bind_rtu, &rw_rtu);
@@ -195,10 +183,9 @@ int main() {
         printer_state[i] = AVAILABLE;
         pthread_mutex_init (&printer_lock[i], NULL);
     };
-    sem_init (&binder, 0, 2);
-    sem_init (&entry_book, 0, 2);
+	// for (int i=0; i<n_print_station; i++) pthread_mutex_init(&printer_state[i], NULL);
+        // printf("hello\n");
     pthread_mutex_init(&mutex, NULL);
-    pthread_mutex_init(&eb_rc_mutex, NULL);
 	groups = (group**)malloc(n_groups * sizeof(group*));
     for (int i=0; i<n_groups; i++) groups[i] = create_group(group_size, i+1);
     for (int i=0; i<n_groups; i++) start_print_copies(groups[i]);
@@ -207,7 +194,5 @@ int main() {
 	// for (int i=0; i<n_print_station; i++) pthread_mutex_destroy(&printer_state[i]);
     for (int i=0; i<n_print_station; i++) pthread_mutex_destroy (&printer_lock[i]);
     pthread_mutex_destroy(&mutex);
-    sem_destroy(&binder);
-    printf("\n");
 	return 0;
 }
