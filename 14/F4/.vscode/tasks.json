@@ -11,7 +11,10 @@
 				"-pthread",
 				"${file}",
 				"-o",
-				"${fileDirname}/${fileBasenameNoExtension}"
+				"${fileDirname}/${fileBasenameNoExtension}",
+				"-lgsl",
+				"-lgslcblas",
+				"-lm"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

@@ -6,6 +6,7 @@
         "initializer_list": "c",
         "ranges": "c",
         "span": "c",
-        "utility": "c"
+        "utility": "c",
+        "gsl_randist.h": "c"
     }
 }

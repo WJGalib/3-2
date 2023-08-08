@@ -1,0 +1,83 @@
+Student 11 has arrived at PS_4 at time 1
+Student 8 has arrived at PS_1 at time 2
+Student 10 has arrived at PS_3 at time 2
+Student 1 has arrived at PS_2 at time 3
+[2;35mStaff 2 has started reading the entry-book at time 4
+[0m[2;35mStaff 1 has started reading the entry-book at time 4
+[0m[0;35mStaff 1 has read the entry-book at time 7; No. of submission = 0
+[0m[0;35mStaff 2 has read the entry-book at time 7; No. of submission = 0
+[0m[2;35mStaff 1 has started reading the entry-book at time 7
+[0m[0;35mStaff 1 has read the entry-book at time 10; No. of submission = 0
+[0m[0;32mStudent 11 has finished printing on PS_4 at time 11
+[0mStudent 15 has arrived at PS_4 at time 11
+[0;32mStudent 8 has finished printing on PS_1 at time 12
+[0mStudent 4 has arrived at PS_1 at time 12
+[0;32mStudent 10 has finished printing on PS_3 at time 12
+[0mStudent 6 has arrived at PS_3 at time 12
+[2;35mStaff 2 has started reading the entry-book at time 12
+[0m[0;32mStudent 1 has finished printing on PS_2 at time 13
+[0mStudent 5 has arrived at PS_2 at time 13
+[0;35mStaff 2 has read the entry-book at time 15; No. of submission = 0
+[0m[2;35mStaff 1 has started reading the entry-book at time 15
+[0m[2;35mStaff 2 has started reading the entry-book at time 18
+[0m[0;35mStaff 1 has read the entry-book at time 18; No. of submission = 0
+[0m[0;32mStudent 15 has finished printing on PS_4 at time 21
+[0mStudent 3 has arrived at PS_4 at time 21
+[0;35mStaff 2 has read the entry-book at time 21; No. of submission = 0
+[0m[0;32mStudent 4 has finished printing on PS_1 at time 22
+[0m[0;32mStudent 6 has finished printing on PS_3 at time 22
+[0mStudent 12 has arrived at PS_1 at time 22
+Student 2 has arrived at PS_3 at time 22
+[2;35mStaff 1 has started reading the entry-book at time 22
+[0m[0;32mStudent 5 has finished printing on PS_2 at time 23
+[0mStudent 9 has arrived at PS_2 at time 23
+[2;35mStaff 2 has started reading the entry-book at time 23
+[0m[0;35mStaff 1 has read the entry-book at time 25; No. of submission = 0
+[0m[0;35mStaff 2 has read the entry-book at time 26; No. of submission = 0
+[0m[2;35mStaff 1 has started reading the entry-book at time 28
+[0m[2;35mStaff 2 has started reading the entry-book at time 29
+[0m[0;32mStudent 3 has finished printing on PS_4 at time 31
+[0mStudent 7 has arrived at PS_4 at time 31
+[0;35mStaff 1 has read the entry-book at time 31; No. of submission = 0
+[0m[0;32mStudent 2 has finished printing on PS_3 at time 32
+[0m[3;36mGroup 1 has finished printing at time 32
+[0mStudent 14 has arrived at PS_3 at time 32
+[0;32mStudent 12 has finished printing on PS_1 at time 32
+[0mStudent 5, leader of Group 1 is proceeding to bind
+[2;31mGroup 1 has started binding at time 32
+[0m[0;35mStaff 2 has read the entry-book at time 32; No. of submission = 0
+[0m[0;32mStudent 9 has finished printing on PS_2 at time 33
+[0mStudent 13 has arrived at PS_2 at time 33
+[2;35mStaff 1 has started reading the entry-book at time 33
+[0m[0;35mStaff 1 has read the entry-book at time 36; No. of submission = 0
+[0m[2;35mStaff 2 has started reading the entry-book at time 39
+[0m[1;31mGroup 1 has finished binding at time 40
+[0m[2;33mStudent 5, leader of Group 1, is writing to the entry-book
+[0m[0;32mStudent 7 has finished printing on PS_4 at time 41
+[0m[3;36mGroup 2 has finished printing at time 41
+[0mStudent 10, leader of Group 2 is proceeding to bind
+[2;31mGroup 2 has started binding at time 41
+[0m[0;32mStudent 14 has finished printing on PS_3 at time 42
+[0m[0;35mStaff 2 has read the entry-book at time 42; No. of submission = 0
+[0m[2;35mStaff 1 has started reading the entry-book at time 42
+[0m[0;32mStudent 13 has finished printing on PS_2 at time 43
+[0m[3;36mGroup 3 has finished printing at time 43
+[0mStudent 15, leader of Group 3 is proceeding to bind
+[2;31mGroup 3 has started binding at time 43
+[0m[1;33mGroup 1 has submitted the report at time 43
+[0m[2;35mStaff 2 has started reading the entry-book at time 43
+[0m[0;35mStaff 1 has read the entry-book at time 45; No. of submission = 1
+[0m[0;35mStaff 2 has read the entry-book at time 46; No. of submission = 1
+[0m[1;31mGroup 2 has finished binding at time 49
+[0m[2;33mStudent 10, leader of Group 2, is writing to the entry-book
+[0m[2;35mStaff 1 has started reading the entry-book at time 49
+[0m[1;31mGroup 3 has finished binding at time 51
+[0m[2;33mStudent 15, leader of Group 3, is writing to the entry-book
+[0m[1;33mGroup 2 has submitted the report at time 52
+[0m[0;35mStaff 1 has read the entry-book at time 52; No. of submission = 2
+[0m[2;35mStaff 2 has started reading the entry-book at time 52
+[0m[2;35mStaff 1 has started reading the entry-book at time 54
+[0m[1;33mGroup 3 has submitted the report at time 55
+[0m[0;35mStaff 2 has read the entry-book at time 55; No. of submission = 3
+[0m[0;35mStaff 1 has read the entry-book at time 57; No. of submission = 3
+[0m
