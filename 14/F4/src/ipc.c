@@ -26,7 +26,7 @@ int main() {
     };
 
     sem_init (&binder, 0, 2);
-    sem_init (&entry_book, 0, 2);
+    sem_init (&entry_book, 0, 1);
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&eb_rc_mutex, NULL);
     
