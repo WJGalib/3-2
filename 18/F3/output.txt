@@ -1,0 +1,110 @@
+set1/g41.rud
+Vertices 2000 Edges 11785
+Max Cut Weight (Greedy): 1980
+Max Cut Weight (Semi-Greedy): 1918
+Max Cut Weight (Random): 70
+Average local iterations: 102
+Average cut weight for local search: 2089
+best cut weight for GRASP: 2147
+Number of iterations for GRASP: 20
+
+====================
+set1/g42.rud
+Vertices 2000 Edges 11779
+Max Cut Weight (Greedy): 1978
+Max Cut Weight (Semi-Greedy): 1979
+Max Cut Weight (Random): 80
+Average local iterations: 105
+Average cut weight for local search: 2153
+best cut weight for GRASP: 2201
+Number of iterations for GRASP: 20
+
+====================
+set1/g43.rud
+Vertices 1000 Edges 9990
+Max Cut Weight (Greedy): 6421
+Max Cut Weight (Semi-Greedy): 6354
+Max Cut Weight (Random): 5058
+Average local iterations: 58
+Average cut weight for local search: 6463
+best cut weight for GRASP: 6512
+Number of iterations for GRASP: 20
+
+====================
+set1/g44.rud
+Vertices 1000 Edges 9990
+Max Cut Weight (Greedy): 6438
+Max Cut Weight (Semi-Greedy): 6341
+Max Cut Weight (Random): 4966
+Average local iterations: 50
+Average cut weight for local search: 6446
+best cut weight for GRASP: 6485
+Number of iterations for GRASP: 20
+
+====================
+set1/g45.rud
+Vertices 1000 Edges 9990
+Max Cut Weight (Greedy): 6381
+Max Cut Weight (Semi-Greedy): 6344
+Max Cut Weight (Random): 4939
+Average local iterations: 59
+Average cut weight for local search: 6454
+best cut weight for GRASP: 6492
+Number of iterations for GRASP: 20
+
+====================
+set1/g46.rud
+Vertices 1000 Edges 9990
+Max Cut Weight (Greedy): 6343
+Max Cut Weight (Semi-Greedy): 6350
+Max Cut Weight (Random): 4953
+Average local iterations: 56
+Average cut weight for local search: 6453
+best cut weight for GRASP: 6513
+Number of iterations for GRASP: 20
+
+====================
+set1/g47.rud
+Vertices 1000 Edges 9990
+Max Cut Weight (Greedy): 6368
+Max Cut Weight (Semi-Greedy): 6347
+Max Cut Weight (Random): 4894
+Average local iterations: 59
+Average cut weight for local search: 6455
+best cut weight for GRASP: 6497
+Number of iterations for GRASP: 20
+
+====================
+set1/g48.rud
+Vertices 3000 Edges 6000
+Max Cut Weight (Greedy): 3000
+Max Cut Weight (Semi-Greedy): 5734
+Max Cut Weight (Random): 2950
+Average local iterations: 2
+Average cut weight for local search: 5748
+best cut weight for GRASP: 5918
+Number of iterations for GRASP: 20
+
+====================
+set1/g49.rud
+Vertices 3000 Edges 6000
+Max Cut Weight (Greedy): 3000
+Max Cut Weight (Semi-Greedy): 5672
+Max Cut Weight (Random): 3016
+Average local iterations: 2
+Average cut weight for local search: 5741
+best cut weight for GRASP: 5854
+Number of iterations for GRASP: 20
+
+====================
+set1/g50.rud
+Vertices 3000 Edges 6000
+Max Cut Weight (Greedy): 3000
+Max Cut Weight (Semi-Greedy): 5684
+Max Cut Weight (Random): 3016
+Average local iterations: 2
+Average cut weight for local search: 5724
+best cut weight for GRASP: 5802
+Number of iterations for GRASP: 20
+
+====================
