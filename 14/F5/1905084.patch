@@ -1,8 +1,8 @@
 diff --git a/Makefile b/Makefile
-index 39a99d7..9009eb0 100644
+index 39a99d7..ac8519d 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -116,20 +116,24 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
+@@ -116,20 +116,25 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
  .PRECIOUS: %.o
  
  UPROGS=\
@@ -19,6 +19,7 @@ index 39a99d7..9009eb0 100644
 +	$U/_malloctest\
  	$U/_mkdir\
 +	$U/_prod_cons\
++	$U/_producer_consumer\
  	$U/_rm\
  	$U/_sh\
  	$U/_stressfs\
@@ -71,54 +72,61 @@ index a3c962b..478c353 100644
  // plic.c
  void            plicinit(void);
 diff --git a/kernel/proc.c b/kernel/proc.c
-index 959b778..cb9cfb6 100644
+index 959b778..f07d5ed 100644
 --- a/kernel/proc.c
 +++ b/kernel/proc.c
-@@ -9,6 +9,7 @@
+@@ -9,6 +9,8 @@
  struct cpu cpus[NCPU];
  
  struct proc proc[NPROC];
 +struct spinlock memlock[NPROC];
++int ref_count[NPROC];
  
  struct proc *initproc;
  
-@@ -48,11 +49,13 @@ void
+@@ -48,11 +50,16 @@ void
  procinit(void)
  {
    struct proc *p;
 -  
 +  struct spinlock *ml;
++  int *rc;
    initlock(&pid_lock, "nextpid");
    initlock(&wait_lock, "wait_lock");
 -  for(p = proc; p < &proc[NPROC]; p++) {
-+  for(p = proc, ml = memlock; p < &proc[NPROC]; p++, ml++) {
++  for(p = proc, ml = memlock, rc = ref_count; p < &proc[NPROC]; p++, ml++, rc++) {
        initlock(&p->lock, "proc");
 +      initlock(ml, "memlock");
++      *rc = 0;
++      p->ref_count = rc;
 +      p->memlock = ml;
        p->state = UNUSED;
        p->kstack = KSTACK((int) (p - proc));
    }
-@@ -110,8 +113,9 @@ static struct proc*
+@@ -110,8 +117,10 @@ static struct proc*
  allocproc(void)
  {
    struct proc *p;
 +  struct spinlock *ml;
++  int *rc;
  
 -  for(p = proc; p < &proc[NPROC]; p++) {
-+  for(p = proc, ml = memlock; p < &proc[NPROC]; p++, ml++) {
++  for(p = proc, ml = memlock, rc = ref_count; p < &proc[NPROC]; p++, ml++, rc++) {
      acquire(&p->lock);
      if(p->state == UNUSED) {
        goto found;
-@@ -123,6 +127,8 @@ allocproc(void)
+@@ -123,6 +132,10 @@ allocproc(void)
  
  found:
    p->pid = allocpid();
 +  p->memlock = ml;
 +  p->mem_id = p->pid;
++  p->ref_count = rc;
++  *(p->ref_count) = 1;
    p->state = USED;
  
    // Allocate a trapframe page.
-@@ -155,11 +161,16 @@ found:
+@@ -155,11 +168,17 @@ found:
  static void
  freeproc(struct proc *p)
  {
@@ -128,8 +136,9 @@ index 959b778..cb9cfb6 100644
    p->trapframe = 0;
 -  if(p->pagetable)
 -    proc_freepagetable(p->pagetable, p->sz);
++  (*(p->ref_count))--;
 +  if(p->pagetable) {
-+    if (p->is_thread)
++    if (*(p->ref_count) > 0)
 +      proc_unmappagetable(p->pagetable, p->sz);
 +    else 
 +      proc_freepagetable(p->pagetable, p->sz);
@@ -137,7 +146,7 @@ index 959b778..cb9cfb6 100644
    p->pagetable = 0;
    p->sz = 0;
    p->pid = 0;
-@@ -169,6 +180,7 @@ freeproc(struct proc *p)
+@@ -169,6 +188,7 @@ freeproc(struct proc *p)
    p->killed = 0;
    p->xstate = 0;
    p->state = UNUSED;
@@ -145,7 +154,7 @@ index 959b778..cb9cfb6 100644
  }
  
  // Create a user page table for a given process, with no user memory,
-@@ -215,6 +227,19 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
+@@ -215,6 +235,19 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
    uvmfree(pagetable, sz);
  }
  
@@ -165,7 +174,7 @@ index 959b778..cb9cfb6 100644
  // a user program that calls exec("/init")
  // assembled from ../user/initcode.S
  // od -t xC ../user/initcode
-@@ -259,18 +284,39 @@ userinit(void)
+@@ -259,18 +292,39 @@ userinit(void)
  int
  growproc(int n)
  {
@@ -209,7 +218,7 @@ index 959b778..cb9cfb6 100644
    return 0;
  }
  
-@@ -325,6 +371,69 @@ fork(void)
+@@ -325,6 +379,72 @@ fork(void)
    return pid;
  }
  
@@ -235,6 +244,9 @@ index 959b778..cb9cfb6 100644
 +  np->sz = p->sz;
 +
 +  np->mem_id = p->mem_id;
++
++  np->ref_count = p->ref_count;
++  (*(np->ref_count))++;
 +
 +  //bind to parent's heap memory lock and heap memory reference counts
 +  np->memlock = p->memlock;
@@ -279,7 +291,7 @@ index 959b778..cb9cfb6 100644
  // Pass p's abandoned children to init.
  // Caller must hold wait_lock.
  void
-@@ -381,10 +490,53 @@ exit(int status)
+@@ -381,10 +501,53 @@ exit(int status)
    release(&wait_lock);
  
    // Jump into the scheduler, never to return.
@@ -333,7 +345,7 @@ index 959b778..cb9cfb6 100644
  // Wait for a child process to exit and return its pid.
  // Return -1 if this process has no children.
  int
-@@ -434,6 +586,86 @@ wait(uint64 addr)
+@@ -434,6 +597,86 @@ wait(uint64 addr)
    }
  }
  
@@ -421,10 +433,10 @@ index 959b778..cb9cfb6 100644
  // Each CPU calls scheduler() after setting itself up.
  // Scheduler never returns.  It loops, doing:
 diff --git a/kernel/proc.h b/kernel/proc.h
-index d021857..9407b95 100644
+index d021857..0c7a3c9 100644
 --- a/kernel/proc.h
 +++ b/kernel/proc.h
-@@ -90,6 +90,9 @@ struct proc {
+@@ -90,7 +90,11 @@ struct proc {
    void *chan;                  // If non-zero, sleeping on chan
    int killed;                  // If non-zero, have been killed
    int xstate;                  // Exit status to be returned to parent's wait
@@ -432,8 +444,10 @@ index d021857..9407b95 100644
 +  int mem_id;                  // ID shared by users of same address space
 +  struct spinlock *memlock;    // lock for memory operations
    int pid;                     // Process ID
++  int *ref_count;
  
    // wait_lock must be held when using this:
+   struct proc *parent;         // Parent process
 diff --git a/kernel/syscall.c b/kernel/syscall.c
 index ed65409..7d6dc68 100644
 --- a/kernel/syscall.c
@@ -652,7 +666,7 @@ index 9f69783..2f50e4d 100644
  void
 diff --git a/user/basic_threads.c b/user/basic_threads.c
 new file mode 100644
-index 0000000..d298db6
+index 0000000..678625d
 --- /dev/null
 +++ b/user/basic_threads.c
 @@ -0,0 +1,49 @@
@@ -671,7 +685,7 @@ index 0000000..d298db6
 +}
 +
 +void do_work1(void *arg){
-+    for (int i=0; i<100; i++)
++    for (int i=0; i<1000; i++)
 +        printf( "A");
 +
 +    thread_exit();
@@ -679,7 +693,7 @@ index 0000000..d298db6
 +}
 +
 +void do_work2(void *arg){
-+    for (int i=0; i<100; i++)
++    for (int i=0; i<1000; i++)
 +        printf( "B");
 +
 +    thread_exit();
@@ -1065,6 +1079,153 @@ index 0000000..f62987e
 +    exit(0);
 +}
 \ No newline at end of file
+diff --git a/user/producer_consumer.c b/user/producer_consumer.c
+new file mode 100644
+index 0000000..ceeef8e
+--- /dev/null
++++ b/user/producer_consumer.c
+@@ -0,0 +1,141 @@
++#include "user/semaphore.h"
++
++struct queue{
++	int arr[16];
++	int front;
++	int rear;
++	int size;
++
++};
++void queue_init(struct queue* q)
++{
++    q->front = 0;
++	q->rear = 0;
++	q->size = 0;
++
++}
++void queue_push(struct queue* q,int x)
++{
++		q->arr[q->rear] = x;
++		q->rear = (q->rear+1)%16;
++		q->size++;
++}
++int queue_front(struct queue* q)
++{
++		if(q->size==0)
++			return -1;
++		return q->arr[q->front];
++}
++void queue_pop(struct queue* q)
++{
++		q->front = (q->front+1)%16;
++		q->size--;
++}
++
++struct queue q;
++// a mutex object lock
++struct thread_mutex mtx;
++// a semaphore object empty
++struct semaphore empty;
++// a semaphore object full
++struct semaphore full;
++
++struct thread_mutex print_lock;
++
++void init_semaphore()
++{
++	// initialize mutex lock
++    thread_mutex_init(&mtx, "mutex");
++	// initialize semaphore empty with 5
++    thread_sem_init(&empty,5);
++	// initialize semaphore full with 0
++    thread_sem_init(&full,0);
++
++    thread_mutex_init(&print_lock, "print_lock");
++
++}
++
++void  ProducerFunc(void * arg)
++{
++    thread_mutex_lock(&print_lock);
++	printf("%s\n",(char*)arg);
++    thread_mutex_unlock(&print_lock);
++	int i;
++	for(i=1;i<=10;i++)
++	{
++		// wait for semphore empty
++        thread_sem_wait(&empty);
++
++		// wait for mutex lock
++        thread_mutex_lock(&mtx);
++
++		sleep(1);
++		queue_push(&q,i);
++        thread_mutex_lock(&print_lock);
++		printf("producer produced item %d\n",i);
++		thread_mutex_unlock(&print_lock);
++		// unlock mutex lock
++        thread_mutex_unlock(&mtx);
++		// post semaphore full
++        thread_sem_post(&full);
++	}
++    thread_exit();
++    return;
++}
++
++void  ConsumerFunc(void * arg)
++{
++    thread_mutex_lock(&print_lock);
++	printf("%s\n",(char*)arg);
++    thread_mutex_unlock(&print_lock);
++	int i;
++	for(i=1;i<=10;i++)
++	{
++		// wait for semphore full
++        thread_sem_wait(&full);
++		// wait for mutex lock
++        thread_mutex_lock(&mtx);
++
++
++		sleep(1);
++		int item = queue_front(&q);
++		queue_pop(&q);
++        thread_mutex_lock(&print_lock);
++		printf("consumer consumed item %d\n",item);
++        thread_mutex_unlock(&print_lock);
++
++
++		// unlock mutex lock
++        thread_mutex_unlock(&mtx);
++		// post semaphore empty
++        thread_sem_post(&empty);
++	}
++    thread_exit();
++    return;
++}
++
++int main(void)
++{
++
++	init_semaphore();
++
++	char * message1 = "i am producer";
++	char * message2 = "i am consumer";
++
++
++	void *s1, *s2;
++	int thread1, thread2, r1, r2;
++
++	s1 = malloc(4096);
++	s2 = malloc(4096);
++
++	thread1 = thread_create(ProducerFunc, (void*)message1, s1);
++	thread2 = thread_create(ConsumerFunc, (void*)message2, s2);
++
++	r1 = thread_join(thread1);
++	r2 = thread_join(thread2);
++
++	printf("Threads finished: (%d):%d, (%d):%d\n",
++      thread1, r1, thread2, r2);
++	exit(0);
++}
 diff --git a/user/semaphore.h b/user/semaphore.h
 new file mode 100644
 index 0000000..6338d39

@@ -93,7 +93,7 @@ TcpAdaptiveReno::PktsAcked(Ptr<TcpSocketState> tcb, uint32_t packetsAcked, const
 
     m_ackedSegments += packetsAcked;
 
-    if (!(rtt.IsZero() || rtt <= m_RttMin ))
+    if (rtt.IsZero() || rtt <= m_RttMin)
         m_RttMin = rtt;
     m_Rtt = rtt;
     TcpWestwoodPlus::EstimateBW (rtt, tcb);
@@ -115,7 +115,7 @@ TcpAdaptiveReno::EstimateCongestionLevel()
 void 
 TcpAdaptiveReno::EstimateIncWnd(int MSS)
 {
-    int M = 1000, B = m_currentBW.Get().GetBitRate();
+    int M = 1000, B = m_currentBW.Get().GetBitRate()/8.0;
     double m_WndIncMax = 1.0 * B / M * MSS, alpha = 10, c = EstimateCongestionLevel();
     double beta = 2 * m_WndIncMax * (1/alpha - (1/alpha + 1)/std::exp(alpha));
     double gamma = 1 - 2 * m_WndIncMax * (1/alpha - (1/alpha + 1/2)/std::exp(alpha));
@@ -129,8 +129,8 @@ TcpAdaptiveReno::CongestionAvoidance (Ptr<TcpSocketState> tcb, uint32_t segments
     int MSS = (int)(tcb->m_segmentSize * tcb->m_segmentSize);
     EstimateIncWnd(MSS);
     int Wnd = tcb->m_cWnd.Get();
-    m_WndBase += (1.0 * MSS/Wnd);
-    m_WndProbe = std::max (m_WndProbe + 1.0 * m_WndInc/Wnd, 0.0);
+    m_WndBase += std::max(1.0, 1.0*MSS/Wnd);
+    m_WndProbe = std::max (m_WndProbe + 1.0*m_WndInc/Wnd, 0.0);
     Wnd = m_WndBase + m_WndProbe;
     tcb->m_cWnd = Wnd;
 }

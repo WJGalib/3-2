@@ -170,7 +170,7 @@ TutorialApp::ScheduleTx()
 AsciiTraceHelper asciiTraceHelper;
 std::string plotParam, tcpModel;
 std::vector<std::pair<double, uint32_t>> renoTimeVsCwnd, otherTimeVsCwnd;
-double thpReno = 0, thpOther = 0, packetLossExp = -6;
+double thpReno = 0, thpOther = 0, packetLossExp = -6, jfi;
 uint32_t nRecSendPairs = 2, payloadSize = 1024, bottleneckDataRate = 50;
 
 static void
@@ -210,12 +210,12 @@ printCongestion()
     else if (plotParam == "btlneckDataRate") {
         std::string path2 = "scratch/plots/throughput_vs_btlneckDataRate_" + tcpModel + ".dat"; 
         fout1 = asciiTraceHelper.CreateFileStream(path2, std::ios_base::app);
-        *fout1->GetStream() << bottleneckDataRate << " " << thpReno << " " << thpOther << std::endl; 
+        *fout1->GetStream() << bottleneckDataRate << " " << thpReno << " " << thpOther << " " << jfi << std::endl; 
     }
     else if (plotParam == "packetLossExp") {
         std::string path2 = "scratch/plots/throughput_vs_packetLossExp_" + tcpModel + ".dat";
         fout1 = asciiTraceHelper.CreateFileStream(path2, std::ios_base::app);
-        *fout1->GetStream() << packetLossExp << " " << thpReno << " " << thpOther << std::endl; 
+        *fout1->GetStream() << packetLossExp << " " << thpReno << " " << thpOther << " " << jfi << std::endl; 
     }
 }
 
@@ -251,6 +251,10 @@ main(int argc, char* argv[])
     PointToPointDumbbellHelper dumbbellHelper (nRecSendPairs, dumbbellLeft, nRecSendPairs, dumbbellRight, dumbbellBottleneck);
 
 
+    Ptr<RateErrorModel> lossModel = CreateObject<RateErrorModel>();
+    lossModel->SetAttribute("ErrorRate", DoubleValue(packetLossRate));
+    dumbbellHelper.m_routerDevices.Get(1)->SetAttribute("ReceiveErrorModel", PointerValue(lossModel));
+    dumbbellHelper.m_routerDevices.Get(0)->SetAttribute("ReceiveErrorModel", PointerValue(lossModel));
 
     // NetDeviceContainer devices;
     // devices = pointToPoint.Install(nodes);
@@ -270,13 +274,6 @@ main(int argc, char* argv[])
         Ipv4AddressHelper("192.25.0.0", "255.255.255.0"),
         Ipv4AddressHelper("192.24.0.0", "255.255.255.0")
     );
-    Ipv4GlobalRoutingHelper::PopulateRoutingTables(); 
-
-    std::cout << packetLossRate << std::endl;
-    Ptr<RateErrorModel> lossModel = CreateObject<RateErrorModel>();
-    lossModel->SetAttribute("ErrorRate", DoubleValue(packetLossRate));
-    dumbbellHelper.m_routerDevices.Get(1)->SetAttribute("ReceiveErrorModel", PointerValue(lossModel));
-    //dumbbellHelper.m_routerDevices.Get(0)->SetAttribute("ReceiveErrorModel", PointerValue(lossModel));
 
        // 8. Install FlowMonitor on all nodes
     FlowMonitorHelper flowmon;
@@ -286,21 +283,22 @@ main(int argc, char* argv[])
     PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny(), 9));
     ApplicationContainer sinkApp = packetSinkHelper.Install({dumbbellHelper.GetRight(0), dumbbellHelper.GetRight(1)});
     sinkApp.Start(Seconds(0.0));
-    sinkApp.Stop(Seconds(30.0));
+    sinkApp.Stop(Seconds(60.0));
     for (uint32_t i=0; i<nRecSendPairs; i++) 
     {
         Ptr<Socket> ns3TcpSocket = Socket::CreateSocket(dumbbellHelper.GetLeft(i), TcpSocketFactory::GetTypeId());
         if (i==0) ns3TcpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChangeReno));
         else if (i==1) ns3TcpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChangeOther));
         Ptr<TutorialApp> app = CreateObject<TutorialApp>();
-        app->Setup(ns3TcpSocket, InetSocketAddress(dumbbellHelper.GetRightIpv4Address(i), 9), payloadSize, 3000000, DataRate("1Gbps"));
+        app->Setup(ns3TcpSocket, InetSocketAddress(dumbbellHelper.GetRightIpv4Address(i), 9), payloadSize, 2000000000, DataRate("1Gbps"));
         dumbbellHelper.GetLeft(i)->AddApplication (app);
         app->SetStartTime(Seconds(1.0));
-        app->SetStopTime(Seconds(30.0));
+        app->SetStopTime(Seconds(60.0));
     }
 
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables(); 
 
-    Simulator::Stop(Seconds(31.5));
+    Simulator::Stop(Seconds(61.5));
     Simulator::Run();
 
     // 10. Print per flow statistics
@@ -308,17 +306,20 @@ main(int argc, char* argv[])
     Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowmon.GetClassifier());
     FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats(); 
     std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i; uint32_t j;
+    double sumX = 0, sumXSquare = 0;
     for (i=stats.begin(), j=1; i!=stats.end(); ++i, ++j)
     {
         //   Simulator::Stops at "second 10".
         Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(i->first);
         std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
-        double thpKbps = i->second.rxBytes * 8.0 / 29.0 / 1e3;
+        double thpKbps = i->second.rxBytes * 8.0 / 59.0 / 1e3;
         if (j%2) thpReno += thpKbps;
         else thpOther += thpKbps;
         std::cout << "  Throughput: " << thpKbps  << " Kbps" << std::endl;
+        sumX += thpKbps, sumXSquare += thpKbps*thpKbps;
     }
-
+    double meanX = sumX/(j-1), meanXSquare = sumXSquare/(j-1);
+    jfi = meanX*meanX / meanXSquare;
 
     Simulator::Destroy();
 
