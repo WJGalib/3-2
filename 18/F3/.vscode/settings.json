@@ -13,6 +13,7 @@
         "span": "cpp",
         "new": "cpp",
         "ostream": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "chrono": "cpp"
     }
 }
