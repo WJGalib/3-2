@@ -1,0 +1,401 @@
+ 
+ 
+seed: 1
+example : 98.4881%
+testdata: 91.1504%
+ 
+seed: 2
+example : 98.8227%
+testdata: 92.9539%
+ 
+seed: 3
+example : 97.3534%
+testdata: 90.6061%
+ 
+seed: 4
+example : 99.1254%
+testdata: 91.2921%
+ 
+seed: 5
+example : 98.7717%
+testdata: 91.5698%
+ 
+seed: 6
+example : 99.5011%
+testdata: 92%
+ 
+seed: 7
+example : 98.8962%
+testdata: 93.7669%
+ 
+seed: 8
+example : 99.708%
+testdata: 91.0615%
+ 
+seed: 9
+example : 98.433%
+testdata: 93.8272%
+ 
+seed: 10
+example : 99.278%
+testdata: 92.4198%
+ 
+seed: 11
+example : 98.1645%
+testdata: 92.623%
+ 
+seed: 12
+example : 98.7663%
+testdata: 92.5714%
+ 
+seed: 13
+example : 98.5096%
+testdata: 90.9091%
+ 
+seed: 14
+example : 98.4286%
+testdata: 91.4634%
+ 
+seed: 15
+example : 98.6101%
+testdata: 93.0748%
+ 
+seed: 16
+example : 99%
+testdata: 93.2927%
+ 
+seed: 17
+example : 98.9744%
+testdata: 90.0826%
+ 
+seed: 18
+example : 98.8571%
+testdata: 92.378%
+ 
+seed: 19
+example : 99.2017%
+testdata: 91.4286%
+ 
+seed: 20
+example : 98.5612%
+testdata: 93.1953%
+ 
+seed: 21
+example : 98.8304%
+testdata: 90.8333%
+ 
+seed: 22
+example : 99.1977%
+testdata: 90.1961%
+ 
+seed: 23
+example : 99.2098%
+testdata: 93.1548%
+ 
+seed: 24
+example : 97.4711%
+testdata: 93.0233%
+ 
+seed: 25
+example : 98.4805%
+testdata: 90.7514%
+ 
+seed: 26
+example : 99.711%
+testdata: 91.2791%
+ 
+seed: 27
+example : 99.0614%
+testdata: 92.1283%
+ 
+seed: 28
+example : 99.2795%
+testdata: 92.6471%
+ 
+seed: 29
+example : 98.6331%
+testdata: 91.1243%
+ 
+seed: 30
+example : 99.0573%
+testdata: 91.404%
+ 
+seed: 31
+example : 98.9899%
+testdata: 93.2749%
+ 
+seed: 32
+example : 98.9201%
+testdata: 92.9204%
+ 
+seed: 33
+example : 98.1375%
+testdata: 92.4699%
+ 
+seed: 34
+example : 99.3431%
+testdata: 93.0168%
+ 
+seed: 35
+example : 98.4218%
+testdata: 91.9162%
+ 
+seed: 36
+example : 98.6994%
+testdata: 92.1512%
+ 
+seed: 37
+example : 98.8473%
+testdata: 92.0588%
+ 
+seed: 38
+example : 99.2775%
+testdata: 92.4419%
+ 
+seed: 39
+example : 98.605%
+testdata: 93.4426%
+ 
+seed: 40
+example : 98.4957%
+testdata: 91.5663%
+ 
+seed: 41
+example : 98.5755%
+testdata: 92.284%
+ 
+seed: 42
+example : 98.1146%
+testdata: 92.8367%
+ 
+seed: 43
+example : 98.5826%
+testdata: 91.4826%
+ 
+seed: 44
+example : 99.4135%
+testdata: 91.2088%
+ 
+seed: 45
+example : 98.987%
+testdata: 94.2197%
+ 
+seed: 46
+example : 99.419%
+testdata: 92.3077%
+ 
+seed: 47
+example : 99.0518%
+testdata: 91.3165%
+ 
+seed: 48
+example : 99.4953%
+testdata: 91.7889%
+ 
+seed: 49
+example : 98.4161%
+testdata: 89.0855%
+ 
+seed: 50
+example : 99.0754%
+testdata: 93.7888%
+ 
+seed: 51
+example : 99.0057%
+testdata: 94.0625%
+ 
+seed: 52
+example : 98.4672%
+testdata: 92.4581%
+ 
+seed: 53
+example : 98.9309%
+testdata: 92.3077%
+ 
+seed: 54
+example : 98.558%
+testdata: 94.4282%
+ 
+seed: 55
+example : 99.117%
+testdata: 92.4119%
+ 
+seed: 56
+example : 99.4864%
+testdata: 90.6849%
+ 
+seed: 57
+example : 99.0539%
+testdata: 92.3729%
+ 
+seed: 58
+example : 98.0234%
+testdata: 92.8177%
+ 
+seed: 59
+example : 99.1317%
+testdata: 92.4855%
+ 
+seed: 60
+example : 98.6928%
+testdata: 92.0228%
+ 
+seed: 61
+example : 98.0896%
+testdata: 92.9155%
+ 
+seed: 62
+example : 98.4649%
+testdata: 90.8333%
+ 
+seed: 63
+example : 99.2764%
+testdata: 92.1965%
+ 
+seed: 64
+example : 98.5968%
+testdata: 93.5829%
+ 
+seed: 65
+example : 99.2679%
+testdata: 92.8177%
+ 
+seed: 66
+example : 99.0525%
+testdata: 91.573%
+ 
+seed: 67
+example : 99.2006%
+testdata: 92.0455%
+ 
+seed: 68
+example : 98.8506%
+testdata: 93.1548%
+ 
+seed: 69
+example : 99.1285%
+testdata: 94.5869%
+ 
+seed: 70
+example : 98.8304%
+testdata: 93.0556%
+ 
+seed: 71
+example : 98.4364%
+testdata: 92.5234%
+ 
+seed: 72
+example : 98.6842%
+testdata: 90.5556%
+ 
+seed: 73
+example : 98.2366%
+testdata: 90.4632%
+ 
+seed: 74
+example : 98.7234%
+testdata: 91.8239%
+ 
+seed: 75
+example : 98.9324%
+testdata: 93.4985%
+ 
+seed: 76
+example : 98.7143%
+testdata: 92.378%
+ 
+seed: 77
+example : 98.9232%
+testdata: 91.6418%
+ 
+seed: 78
+example : 99.0607%
+testdata: 93.6047%
+ 
+seed: 79
+example : 98.689%
+testdata: 90.1408%
+ 
+seed: 80
+example : 98.0698%
+testdata: 92.9134%
+ 
+seed: 81
+example : 99.2695%
+testdata: 91.6435%
+ 
+seed: 82
+example : 97.5735%
+testdata: 91.3043%
+ 
+seed: 83
+example : 98.7161%
+testdata: 90.7975%
+ 
+seed: 84
+example : 99.1971%
+testdata: 92.4581%
+ 
+seed: 85
+example : 99.2748%
+testdata: 91.9771%
+ 
+seed: 86
+example : 98.407%
+testdata: 89.9135%
+ 
+seed: 87
+example : 99.0064%
+testdata: 92.79%
+ 
+seed: 88
+example : 98.995%
+testdata: 93.4328%
+ 
+seed: 89
+example : 99.6332%
+testdata: 95.3425%
+ 
+seed: 90
+example : 98.7216%
+testdata: 92.5%
+ 
+seed: 91
+example : 98.252%
+testdata: 94.0845%
+ 
+seed: 92
+example : 98.75%
+testdata: 91.3043%
+ 
+seed: 93
+example : 98.1936%
+testdata: 92.4419%
+ 
+seed: 94
+example : 99.1098%
+testdata: 92.8947%
+ 
+seed: 95
+example : 98.1371%
+testdata: 92.228%
+ 
+seed: 96
+example : 98.8321%
+testdata: 90.2235%
+ 
+seed: 97
+example : 98.4035%
+testdata: 90%
+ 
+seed: 98
+example : 99.2743%
+testdata: 91.1429%
+ 
+seed: 99
+example : 99.2137%
+testdata: 92.0973%
+ 
+seed: 100
+example : 98.8547%
+testdata: 92.4471%
