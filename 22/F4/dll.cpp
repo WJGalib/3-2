@@ -116,7 +116,8 @@ int main() {
     bool *CRC = new bool [L_G];
 
     int c_i;
-    for (c_i=0; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1] ^ G[c_i+1];
+    for (c_i=0; !serialised[c_i]; c_i++);
+    for (; c_i<L_G-1; c_i++) CRC[c_i] = serialised[c_i+1] ^ G[c_i+1];
     CRC[c_i] = serialised[c_i+1];
     for (int i=0; i<L_G; i++) cout << CRC[i];
     cout << endl;
