@@ -1,4 +1,4 @@
-#include "DecisionTree.h"
+#include "DecisionTree.hpp"
 #include <fstream>
 #include <sstream>
 #include <bits/stdc++.h>
@@ -7,10 +7,12 @@ const int rand_seed = 73;
 int n_car_attr = 7, car_target_attr_id = 6;
 int n_car_attr_val[7] = {4, 4, 4, 3, 3, 3, 4};
 
-int main() {
+int main (int argc, char** argv) {
     vector<int*>* exmp_data = new vector<int*>();
-    string example, attr;
-    ifstream fin ("car.data", ios::in);
+    string example, attr, input_file;
+    if (argc > 1) input_file = argv[1];
+    else input_file = "car.data";
+    ifstream fin (input_file, ios::in);
     while(getline(fin, example)) {
         // cout << example << endl;
         int* example_values = new int [n_car_attr];

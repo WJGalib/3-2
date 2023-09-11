@@ -1,4 +1,4 @@
-#include "DecisionTree.h"
+#include "DecisionTree.hpp"
 
 int main() {
     int n_attr, target_attr_id, *n_attr_val, n_examples;
